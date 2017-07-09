@@ -108,6 +108,60 @@ func TestGrid_withNeighbors(t *testing.T) {
 	require.Equal(expected, actual)
 }
 
+func TestGrid_Next(t *testing.T) {
+	require := require.New(t)
+	type gridPair struct {
+		start Grid
+		next  Grid
+	}
+	pairs := []gridPair{
+		{
+			start: FromSlice([][]int{
+				{0, 1, 0},
+				{0, 1, 0},
+				{0, 1, 0},
+			}),
+			next: FromSlice([][]int{
+				{0, 0, 0},
+				{1, 1, 1},
+				{0, 0, 0},
+			}),
+		},
+		{
+			start: FromSlice([][]int{
+				{0, 0, 0, 0},
+				{0, 1, 1, 1},
+				{1, 1, 1, 0},
+				{0, 0, 0, 0},
+			}),
+			next: FromSlice([][]int{
+				{0, 0, 1, 0},
+				{1, 0, 0, 1},
+				{1, 0, 0, 1},
+				{0, 1, 0, 0},
+			}),
+		},
+		{
+			start: FromSlice([][]int{
+				{0, 0, 0, 0},
+				{0, 1, 1, 0},
+				{0, 1, 1, 0},
+				{0, 0, 0, 0},
+			}),
+			next: FromSlice([][]int{
+				{0, 0, 0, 0},
+				{0, 1, 1, 0},
+				{0, 1, 1, 0},
+				{0, 0, 0, 0},
+			}),
+		},
+	}
+
+	for _, pair := range pairs {
+		require.Equal(pair.next, pair.start.Next())
+	}
+}
+
 func TestGrid_maxXY(t *testing.T) {
 	require := require.New(t)
 	grid := FromSlice([][]int{

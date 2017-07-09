@@ -1,6 +1,9 @@
 package main
 
+// LiveCellRepr is the string used to represent a live Cell.
 const LiveCellRepr = `■`
+
+// DeadCellRepr is the string used to represent a dead Cell.
 const DeadCellRepr = ` `
 
 // Cell is an (x, y) coordinate.
