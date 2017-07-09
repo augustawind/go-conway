@@ -10,16 +10,75 @@ import (
 
 func TestFromSlice(t *testing.T) {
 	require := require.New(t)
-	actual := FromSlice([][]int{
+	var grid Grid
+	var err error
+
+	// Valid input.
+	grid, err = FromSlice([][]int{
 		{1, 0, 0},
 		{0, 0, 0},
 		{0, 1, 1},
 	})
+	require.Nil(err)
 	expected := make(Grid)
 	expected[Cell{0, 0}] = struct{}{}
 	expected[Cell{1, 2}] = struct{}{}
 	expected[Cell{2, 2}] = struct{}{}
-	require.Equal(expected, actual)
+	require.Equal(expected, grid)
+
+	// Invalid input.
+	grid, err = FromSlice([][]int{
+		{0, 0, 0},
+		{0, 0, 0},
+		{0, 0, 0},
+	})
+	require.NotNil(err)
+	require.Nil(grid)
+}
+
+func TestFromString(t *testing.T) {
+	require := require.New(t)
+	var grid Grid
+	var err error
+
+	// Valid input.
+	grid, err = FromString(`
+		x..
+		...
+		.xx
+    `)
+	require.Nil(err)
+	expected := make(Grid)
+	expected[Cell{0, 0}] = struct{}{}
+	expected[Cell{1, 2}] = struct{}{}
+	expected[Cell{2, 2}] = struct{}{}
+	require.Equal(expected, grid)
+
+	// Invalid input.
+	grid, err = FromString(`
+        ...
+        ...
+        ...
+    `)
+	require.NotNil(err)
+	require.Nil(grid)
+}
+
+func TestRandomGrid(t *testing.T) {
+	require := require.New(t)
+	var grid Grid
+	var err error
+
+	// All living Cells.
+	grid, err = RandomGrid(3, 3, 1.0)
+	require.Nil(err)
+	expected := make(Grid)
+	expected.AddMany(
+		Cell{0, 0}, Cell{1, 0}, Cell{2, 0},
+		Cell{0, 1}, Cell{1, 1}, Cell{2, 1},
+		Cell{0, 2}, Cell{1, 2}, Cell{2, 2},
+	)
+	require.Equal(expected, grid)
 }
 
 func TestCell_neighbors(t *testing.T) {
@@ -36,7 +95,7 @@ func TestCell_neighbors(t *testing.T) {
 
 func TestGrid_liveNeighbors(t *testing.T) {
 	require := require.New(t)
-	grid := FromSlice([][]int{
+	grid := mkGrid([][]int{
 		{1, 0, 0, 0},
 		{1, 1, 1, 0},
 		{0, 0, 1, 1},
@@ -48,7 +107,7 @@ func TestGrid_liveNeighbors(t *testing.T) {
 
 func TestGrid_cellSurvives(t *testing.T) {
 	assert := assert.New(t)
-	grid := FromSlice([][]int{
+	grid := mkGrid([][]int{
 		{1, 0, 0, 1, 0},
 		{0, 1, 0, 0, 0},
 		{1, 0, 0, 1, 0},
@@ -93,7 +152,7 @@ func TestGrid_cellSurvives(t *testing.T) {
 
 func TestGrid_withNeighbors(t *testing.T) {
 	require := require.New(t)
-	grid := FromSlice([][]int{
+	grid := mkGrid([][]int{
 		{1, 0},
 		{0, 1},
 	})
@@ -116,25 +175,25 @@ func TestGrid_Next(t *testing.T) {
 	}
 	pairs := []gridPair{
 		{
-			start: FromSlice([][]int{
+			start: mkGrid([][]int{
 				{0, 1, 0},
 				{0, 1, 0},
 				{0, 1, 0},
 			}),
-			next: FromSlice([][]int{
+			next: mkGrid([][]int{
 				{0, 0, 0},
 				{1, 1, 1},
 				{0, 0, 0},
 			}),
 		},
 		{
-			start: FromSlice([][]int{
+			start: mkGrid([][]int{
 				{0, 0, 0, 0},
 				{0, 1, 1, 1},
 				{1, 1, 1, 0},
 				{0, 0, 0, 0},
 			}),
-			next: FromSlice([][]int{
+			next: mkGrid([][]int{
 				{0, 0, 1, 0},
 				{1, 0, 0, 1},
 				{1, 0, 0, 1},
@@ -142,13 +201,13 @@ func TestGrid_Next(t *testing.T) {
 			}),
 		},
 		{
-			start: FromSlice([][]int{
+			start: mkGrid([][]int{
 				{0, 0, 0, 0},
 				{0, 1, 1, 0},
 				{0, 1, 1, 0},
 				{0, 0, 0, 0},
 			}),
-			next: FromSlice([][]int{
+			next: mkGrid([][]int{
 				{0, 0, 0, 0},
 				{0, 1, 1, 0},
 				{0, 1, 1, 0},
@@ -165,7 +224,7 @@ func TestGrid_Next(t *testing.T) {
 
 func TestGrid_maxXY(t *testing.T) {
 	require := require.New(t)
-	grid := FromSlice([][]int{
+	grid := mkGrid([][]int{
 		{1, 0, 0, 0},
 		{0, 0, 1, 0},
 		{0, 0, 1, 0},
@@ -177,7 +236,7 @@ func TestGrid_maxXY(t *testing.T) {
 
 func TestGrid_xyBounds(t *testing.T) {
 	require := require.New(t)
-	grid := FromSlice([][]int{
+	grid := mkGrid([][]int{
 		{1, 0, 0, 0},
 		{0, 0, 1, 0},
 		{0, 0, 1, 0},
@@ -191,7 +250,7 @@ func TestGrid_xyBounds(t *testing.T) {
 
 func TestGrid_Show(t *testing.T) {
 	require := require.New(t)
-	grid := FromSlice([][]int{
+	grid := mkGrid([][]int{
 		{1, 0, 0},
 		{0, 0, 0},
 		{0, 1, 1},
@@ -208,4 +267,9 @@ func TestGrid_Show(t *testing.T) {
 		"\n",
 	)
 	require.Equal(strings.TrimSpace(expected), strings.TrimSpace(actual))
+}
+
+func mkGrid(rows [][]int) Grid {
+	grid, _ := FromSlice(rows)
+	return grid
 }

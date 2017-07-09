@@ -1,12 +1,11 @@
 package conway
 
-import "strings"
-
-// LiveCellRepr is the string used to represent a live Cell.
-const LiveCellRepr = `■`
-
-// DeadCellRepr is the string used to represent a dead Cell.
-const DeadCellRepr = ` `
+import (
+	"errors"
+	"math/rand"
+	"regexp"
+	"strings"
+)
 
 // Cell is an (x, y) coordinate.
 type Cell struct {
@@ -17,9 +16,16 @@ type Cell struct {
 // Grid is a 2-D grid of Cells.
 type Grid map[Cell]struct{}
 
+/*
+ * GRID CREATION
+ */
+
+// ErrEmptyGrid is returned when creating a Grid that would have no Cells.
+var ErrEmptyGrid = errors.New("grid must have at least one cell")
+
 // FromSlice constructs a new Grid from a slice of slices of ints.
 // Each nonzero value will be converted into a Cell of its index ([y][x]).
-func FromSlice(rows [][]int) Grid {
+func FromSlice(rows [][]int) (Grid, error) {
 	grid := make(Grid)
 	for y, row := range rows {
 		for x, val := range row {
@@ -28,27 +34,61 @@ func FromSlice(rows [][]int) Grid {
 			}
 		}
 	}
-	return grid
+	return requireNonEmpty(grid)
 }
+
+// GridSplitRegex is the pattern used to split a Grid string into rows.
+var GridSplitRegex = regexp.MustCompile("[\n;]")
+
+// LiveCellInputChar represents a live Cell in a Grid string.
+var LiveCellInputChar = 'x'
+
+var trimChars = []string{"\n", "\r", "\t"}
 
 // FromString constructs a new Grid from a multiline string.
 // Each line represents a row, and each occurrence of the rune 'x' is
 // converted to a Cell in that position in the Grid.
-func FromString(s string) Grid {
+func FromString(s string) (Grid, error) {
 	grid := make(Grid)
-	srows := strings.Split(s, "\n")
-	if len(srows) == 0 && len(srows[0]) == 0 {
-		return grid
-	}
-
-	for y, row := range strings.Split(s, "\n") {
+	s = trimAny(s, trimChars)
+	rows := GridSplitRegex.Split(s, -1)
+	for y, row := range rows {
+		row = trimAny(row, trimChars)
 		for x, char := range row {
-			if char == 'x' {
+			if char == LiveCellInputChar {
 				grid.Add(Cell{x, y})
 			}
 		}
 	}
-	return grid
+	return requireNonEmpty(grid)
+}
+
+func trimAny(s string, cutsets []string) string {
+	for _, cutset := range cutsets {
+		s = strings.Trim(s, cutset)
+	}
+	return s
+}
+
+// RandomGrid creates a Grid of random Cells in the given dimensions.
+// `p` is the probability of a Cell being generated, from 0 to 1.
+func RandomGrid(width, height int, p float64) (Grid, error) {
+	grid := make(Grid)
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			if p > rand.Float64() {
+				grid.Add(Cell{x, y})
+			}
+		}
+	}
+	return requireNonEmpty(grid)
+}
+
+func requireNonEmpty(grid Grid) (Grid, error) {
+	if len(grid) == 0 {
+		return nil, ErrEmptyGrid
+	}
+	return grid, nil
 }
 
 // Add adds a Cell to a Grid.
@@ -67,6 +107,10 @@ func (g Grid) AddMany(cells ...Cell) {
 func (g Grid) Remove(cell Cell) {
 	delete(g, cell)
 }
+
+/*
+ * GAME EXECUTION
+ */
 
 // Next creates a new Grid by applying GoL rules.
 // It returns the new Grid and an ok value. The ok value will be true if
@@ -131,6 +175,16 @@ func (g Grid) liveNeighbors(cell Cell) int {
 	}
 	return n
 }
+
+/*
+ * GRID VISUALIZATION
+ */
+
+// LiveCellRepr is the string used to represent a live Cell.
+const LiveCellRepr = `■`
+
+// DeadCellRepr is the string used to represent a dead Cell.
+const DeadCellRepr = ` `
 
 // Show returns a human-readable string representation of a Grid.
 func (g Grid) Show() string {
