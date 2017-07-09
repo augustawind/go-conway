@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/dustinrohde/go-conway"
 	"github.com/urfave/cli"
@@ -26,25 +27,28 @@ func initApp() *cli.App {
 		cli.StringFlag{
 			Name:  "grid, g",
 			Value: "",
-			Usage: "Starting grid. If `FILE` starts with `@`, interpret it as" +
-				" a file path. If `FILE` is `-`, read from stdout. If `FILE`" +
-				" is absent or blank, use a demo starting grid.",
+			Usage: strings.Join([]string{
+				"Starting grid.",
+				"\t\tIf `FILE` starts with `@`, interpret it as a file path.",
+				"\t\tIf `FILE` is `-`, read from stdout.",
+				"\t\tIf `FILE` is absent or blank, use a demo starting grid.",
+			}, "\n"),
 		},
 		cli.StringFlag{
 			Name:  "outfile, o",
 			Value: "-",
-			Usage: "File to write results to. If `-`, use stdout.",
+			Usage: "File to write results to. If `FILE` is `-`, use stdout.",
 		},
 		cli.DurationFlag{
 			Name:        "delay, d",
 			Value:       config.Delay,
-			Usage:       "Delay between turns; e.g. 500ms, 3s, 1m",
+			Usage:       "`TIME` to pause between turns; e.g. 500ms, 3s, 1m",
 			Destination: &config.Delay,
 		},
 		cli.IntFlag{
 			Name:        "turns, t",
 			Value:       config.MaxTurns,
-			Usage:       "Number of turns to run. If < 0, run forever.",
+			Usage:       "Max `TURNS` to run. If < 0, run indefinitely.",
 			Destination: &config.MaxTurns,
 		},
 		cli.BoolFlag{
@@ -77,6 +81,7 @@ func initApp() *cli.App {
 		Guard(err)
 		grid = conway.FromString(string(gridBytes))
 
+		conway.Run(grid, config)
 		return nil
 	}
 
