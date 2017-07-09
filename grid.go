@@ -37,7 +37,7 @@ func FromSlice(rows [][]int) Grid {
 func FromString(s string) Grid {
 	grid := make(Grid)
 	srows := strings.Split(s, "\n")
-	if len(srows) == 0 || len(srows[0]) == 0 {
+	if len(srows) == 0 && len(srows[0]) == 0 {
 		return grid
 	}
 
