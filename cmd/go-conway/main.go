@@ -31,7 +31,7 @@ func ParseArgs(args []string) (conway.Grid, conway.RunConfig) {
 	if *outfilePtr != "" {
 		var err error
 		config.Outfile, err = os.OpenFile(*outfilePtr, os.O_APPEND, os.ModeAppend)
-		Guard(err, "%s", err)
+		Guard(err)
 	}
 
 	if nargs := flag.NArg(); nargs != 1 {
@@ -43,24 +43,28 @@ func ParseArgs(args []string) (conway.Grid, conway.RunConfig) {
 	}
 
 	gridFile, err := os.Open(flag.Arg(0))
-	Guard(err, err)
+	Guard(err)
 
 	gridBytes, err := ioutil.ReadAll(gridFile)
-	Guard(err, err)
+	Guard(err)
 
 	grid := conway.FromString(string(gridBytes))
 
 	return grid, config
 }
 
-func Guard(err error, msg interface{}, a ...interface{}) {
+func Guard(err error, fmtArgs ...interface{}) {
 	if err != nil {
-		Fail(msg, a...)
+		if len(fmtArgs) > 0 {
+			Fail(fmtArgs[0], fmtArgs[1:]...)
+		} else {
+			Fail(err)
+		}
 	}
 }
 
-func Fail(msg interface{}, a ...interface{}) {
+func Fail(msg interface{}, fmtArgs ...interface{}) {
 	fullMsg := fmt.Sprintf("conway: error: %s\n", msg)
-	fmt.Printf(fullMsg, a...)
+	fmt.Printf(fullMsg, fmtArgs...)
 	os.Exit(1)
 }
