@@ -1,56 +1,86 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
 
 	"github.com/dustinrohde/go-conway"
+	"github.com/urfave/cli"
 )
 
 func main() {
-	grid, opts := ParseArgs(os.Args[1:])
-	conway.Run(grid, opts)
+	app := initApp()
+	app.Run(os.Args)
 }
 
-func ParseArgs(args []string) (conway.Grid, conway.RunConfig) {
+func initApp() *cli.App {
+	app := cli.NewApp()
+	app.Name = "conway"
+	app.Usage = "Run Conway's Game of Life simulation."
+
+	var grid conway.Grid
 	config := conway.DefaultRunConfig()
 
-	flag.BoolVar(&config.Prompt, "prompt", config.Prompt,
-		"Wait for input between each turn.")
-	flag.IntVar(&config.MaxTurns, "turns", config.MaxTurns,
-		"Number of turns to run. If < 0, run forever.")
-	flag.DurationVar(&config.Delay, "delay", config.Delay,
-		"Delay between turns, e.g. 500ms, 3s, 1m")
-
-	outfilePtr := flag.String("out", "", "File to write results to. Defaults to stdout.")
-
-	flag.CommandLine.Parse(args)
-
-	if *outfilePtr != "" {
-		var err error
-		config.Outfile, err = os.OpenFile(*outfilePtr, os.O_APPEND, os.ModeAppend)
-		Guard(err)
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  "grid, g",
+			Value: "",
+			Usage: "Starting grid. If `FILE` starts with `@`, interpret it as" +
+				" a file path. If `FILE` is `-`, read from stdout. If `FILE`" +
+				" is absent or blank, use a demo starting grid.",
+		},
+		cli.StringFlag{
+			Name:  "outfile, o",
+			Value: "-",
+			Usage: "File to write results to. If `-`, use stdout.",
+		},
+		cli.DurationFlag{
+			Name:        "delay, d",
+			Value:       config.Delay,
+			Usage:       "Delay between turns; e.g. 500ms, 3s, 1m",
+			Destination: &config.Delay,
+		},
+		cli.IntFlag{
+			Name:        "turns, t",
+			Value:       config.MaxTurns,
+			Usage:       "Number of turns to run. If < 0, run forever.",
+			Destination: &config.MaxTurns,
+		},
+		cli.BoolFlag{
+			Name:        "interactive, i",
+			Usage:       "Wait for input between each turn.",
+			Destination: &config.Interactive,
+		},
 	}
 
-	if nargs := flag.NArg(); nargs != 1 {
-		if nargs > 1 {
-			Fail("too many arguments")
-		} else {
-			Fail("too few arguments")
+	app.Action = func(c *cli.Context) error {
+		if path := c.String("outfile"); path != "-" {
+			// Write results to a file.
+			file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+			Guard(err)
+			config.OutFile = file
+			defer file.Close()
 		}
+
+		if path := c.String("grid"); path == "-" {
+			// Read Grid from stdin.
+			config.GridFile = os.Stdin
+		} else if path[0] == '@' {
+			// Read Grid from file.
+			file, err := os.OpenFile(path[1:], os.O_RDONLY, 0600)
+			Guard(err)
+			config.GridFile = file
+			defer file.Close()
+		}
+		gridBytes, err := ioutil.ReadAll(config.GridFile)
+		Guard(err)
+		grid = conway.FromString(string(gridBytes))
+
+		return nil
 	}
 
-	gridFile, err := os.Open(flag.Arg(0))
-	Guard(err)
-
-	gridBytes, err := ioutil.ReadAll(gridFile)
-	Guard(err)
-
-	grid := conway.FromString(string(gridBytes))
-
-	return grid, config
+	return app
 }
 
 func Guard(err error, fmtArgs ...interface{}) {

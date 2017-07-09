@@ -158,7 +158,8 @@ func TestGrid_Next(t *testing.T) {
 	}
 
 	for _, pair := range pairs {
-		require.Equal(pair.next, pair.start.Next())
+		actual, _ := pair.start.Next()
+		require.Equal(pair.next, actual)
 	}
 }
 

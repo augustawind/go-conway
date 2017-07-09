@@ -69,7 +69,9 @@ func (g Grid) Remove(cell Cell) {
 }
 
 // Next creates a new Grid by applying GoL rules.
-func (g Grid) Next() Grid {
+// It returns the new Grid and an ok value. The ok value will be true if
+// the Grid still has live Cells, or false if the Grid is empty.
+func (g Grid) Next() (Grid, bool) {
 	grid := make(Grid)
 	for cell := range g.withNeighbors() {
 		if g.cellSurvives(cell) {
@@ -78,7 +80,8 @@ func (g Grid) Next() Grid {
 			grid.Remove(cell)
 		}
 	}
-	return grid
+	ok := len(grid) > 0
+	return grid, ok
 }
 
 func (g Grid) withNeighbors() Grid {
@@ -132,9 +135,9 @@ func (g Grid) liveNeighbors(cell Cell) int {
 // Show returns a human-readable string representation of a Grid.
 func (g Grid) Show() string {
 	str := ""
-	max := g.maxXY()
-	for y := 0; y <= max.Y; y++ {
-		for x := 0; x <= max.X; x++ {
+	min, max := g.xyBounds()
+	for y := min.Y; y <= max.Y; y++ {
+		for x := min.X; x <= max.X; x++ {
 			_, ok := g[Cell{x, y}]
 			if ok {
 				str += LiveCellRepr

@@ -2,40 +2,53 @@ package conway
 
 import (
 	"fmt"
+	"io"
 	"os"
+	"strings"
 	"time"
 )
 
 // RunConfig holds settings for running the simulation.
 type RunConfig struct {
-	Prompt   bool
-	MaxTurns int
-	Delay    time.Duration
-	Outfile  *os.File
+	GridFile    io.Reader
+	OutFile     io.Writer
+	Delay       time.Duration
+	MaxTurns    int
+	Interactive bool
 }
+
+var defaultGridStr = strings.Join(
+	[]string{
+		".....",
+		"..x..",
+		"...x.",
+		".xxx.",
+		".....",
+	},
+	"\n",
+)
 
 // DefaultRunConfig returns the default run settings.
 func DefaultRunConfig() RunConfig {
 	return RunConfig{
-		Prompt:   false,
-		MaxTurns: 0,
-		Delay:    time.Millisecond * 500,
-		Outfile:  os.Stdout,
+		GridFile:    strings.NewReader(defaultGridStr),
+		OutFile:     os.Stdout,
+		Delay:       time.Millisecond * 500,
+		MaxTurns:    0,
+		Interactive: false,
 	}
 }
 
 // Run runs a Game of Life simulation.
 func Run(grid Grid, opts RunConfig) {
-	if opts.Outfile != os.Stdout {
-		defer opts.Outfile.Close
-	}
+	ok := true
 	if opts.MaxTurns > 0 {
-		for i := 0; i < opts.MaxTurns; i++ {
-			grid = NextTurn(grid, opts)
+		for i := 0; i < opts.MaxTurns && ok; i++ {
+			grid, ok = NextTurn(grid, opts)
 		}
 	} else {
-		for {
-			grid = NextTurn(grid, opts)
+		for ok {
+			grid, ok = NextTurn(grid, opts)
 		}
 	}
 }
@@ -46,8 +59,8 @@ func RunDefault(grid Grid) {
 }
 
 // NextTurn runs a single turn of a Game of Life simulation.
-func NextTurn(grid Grid, opts RunConfig) Grid {
-	fmt.Fprintln(opts.Outfile, grid.Show())
+func NextTurn(grid Grid, opts RunConfig) (Grid, bool) {
+	fmt.Fprintln(opts.OutFile, grid.Show())
 	time.Sleep(opts.Delay)
 	return grid.Next()
 }
