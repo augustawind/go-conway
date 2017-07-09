@@ -1,6 +1,7 @@
 package main
 
-const aliveChar = `■`
+const LiveCellRepr = `■`
+const DeadCellRepr = ` `
 
 // Cell is an (x, y) coordinate.
 type Cell struct {
@@ -45,7 +46,7 @@ func (g Grid) Remove(cell Cell) {
 // Next creates a new Grid by applying GoL rules.
 func (g Grid) Next() Grid {
 	grid := make(Grid)
-	for cell := range g.withAdjacentCells() {
+	for cell := range g.withNeighbors() {
 		if g.cellSurvives(cell) {
 			grid.Add(cell)
 		} else {
@@ -55,7 +56,7 @@ func (g Grid) Next() Grid {
 	return grid
 }
 
-func (g Grid) withAdjacentCells() Grid {
+func (g Grid) withNeighbors() Grid {
 	grid := make(Grid)
 	for cell := range g {
 		grid.Add(cell)
@@ -111,9 +112,9 @@ func (g Grid) Show() string {
 		for x := 0; x <= maxX; x++ {
 			_, ok := g[Cell{x, y}]
 			if ok {
-				str += aliveChar
+				str += LiveCellRepr
 			} else {
-				str += " "
+				str += DeadCellRepr
 			}
 		}
 		str += "\n"

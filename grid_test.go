@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,17 +22,16 @@ func TestFromSlice(t *testing.T) {
 	require.Equal(expected, actual)
 }
 
-func TestGrid_maxXY(t *testing.T) {
+func TestCell_neighbors(t *testing.T) {
 	require := require.New(t)
-	grid := FromSlice([][]int{
-		{1, 0, 0, 0},
-		{0, 0, 1, 0},
-		{0, 0, 1, 0},
-		{0, 1, 1, 0},
-	})
-	maxX, maxY := grid.maxXY()
-	require.Equal(2, maxX)
-	require.Equal(3, maxY)
+	cell := Cell{0, 2}
+	actual := cell.neighbors()
+	expected := []Cell{
+		Cell{-1, 1}, Cell{0, 1}, Cell{1, 1},
+		Cell{-1, 2}, Cell{1, 2},
+		Cell{-1, 3}, Cell{0, 3}, Cell{1, 3},
+	}
+	require.Equal(expected, actual)
 }
 
 func TestGrid_liveNeighbors(t *testing.T) {
@@ -91,14 +91,53 @@ func TestGrid_cellSurvives(t *testing.T) {
 	assert.False(grid.cellSurvives(Cell{2, 3}))
 }
 
-func TestCell_neighbors(t *testing.T) {
+func TestGrid_withNeighbors(t *testing.T) {
 	require := require.New(t)
-	cell := Cell{0, 2}
-	actual := cell.neighbors()
-	expected := []Cell{
-		Cell{-1, 1}, Cell{0, 1}, Cell{1, 1},
-		Cell{-1, 2}, Cell{1, 2},
-		Cell{-1, 3}, Cell{0, 3}, Cell{1, 3},
-	}
+	grid := FromSlice([][]int{
+		{1, 0},
+		{0, 1},
+	})
+	actual := grid.withNeighbors()
+	expected := make(Grid)
+	expected.AddMany(
+		Cell{-1, -1}, Cell{0, -1}, Cell{1, -1},
+		Cell{-1, 0}, Cell{0, 0}, Cell{1, 0}, Cell{2, 0},
+		Cell{-1, 1}, Cell{0, 1}, Cell{1, 1}, Cell{2, 1},
+		Cell{0, 2}, Cell{1, 2}, Cell{2, 2},
+	)
 	require.Equal(expected, actual)
+}
+
+func TestGrid_maxXY(t *testing.T) {
+	require := require.New(t)
+	grid := FromSlice([][]int{
+		{1, 0, 0, 0},
+		{0, 0, 1, 0},
+		{0, 0, 1, 0},
+		{0, 1, 1, 0},
+	})
+	maxX, maxY := grid.maxXY()
+	require.Equal(2, maxX)
+	require.Equal(3, maxY)
+}
+
+func TestGrid_Show(t *testing.T) {
+	require := require.New(t)
+	grid := FromSlice([][]int{
+		{1, 0, 0},
+		{0, 0, 0},
+		{0, 1, 1},
+	})
+	actual := grid.Show()
+	x := LiveCellRepr
+	o := DeadCellRepr
+	expected := strings.Join(
+		[]string{
+			x + o + o,
+			o + o + o,
+			o + x + x,
+		},
+		"\n",
+	)
+	require.Equal(strings.TrimSpace(expected), strings.TrimSpace(actual))
 }
