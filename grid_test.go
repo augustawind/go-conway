@@ -3,6 +3,7 @@ package main
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -46,7 +47,7 @@ func TestGrid_liveNeighbors(t *testing.T) {
 }
 
 func TestGrid_cellSurvives(t *testing.T) {
-	require := require.New(t)
+	assert := assert.New(t)
 	grid := FromSlice([][]int{
 		{1, 0, 0, 1, 0},
 		{0, 1, 0, 0, 0},
@@ -55,37 +56,49 @@ func TestGrid_cellSurvives(t *testing.T) {
 		{0, 0, 0, 1, 1},
 	})
 	// 0 live neighbors dies
-	require.False(grid.cellSurvives(Cell{3, 0}))
+	assert.False(grid.cellSurvives(Cell{3, 0}))
 	// 1 live neighbor dies
-	require.False(grid.cellSurvives(Cell{0, 0}))
+	assert.False(grid.cellSurvives(Cell{0, 0}))
 	// 2 live neighbors lives
-	require.True(grid.cellSurvives(Cell{1, 1}))
-	require.True(grid.cellSurvives(Cell{3, 2}))
-	require.True(grid.cellSurvives(Cell{1, 3}))
+	assert.True(grid.cellSurvives(Cell{1, 1}))
+	assert.True(grid.cellSurvives(Cell{3, 2}))
+	assert.True(grid.cellSurvives(Cell{1, 3}))
 	// 3 live neighbors lives
-	require.True(grid.cellSurvives(Cell{0, 2}))
-	require.True(grid.cellSurvives(Cell{0, 3}))
-	require.True(grid.cellSurvives(Cell{3, 4}))
-	require.True(grid.cellSurvives(Cell{4, 4}))
+	assert.True(grid.cellSurvives(Cell{0, 2}))
+	assert.True(grid.cellSurvives(Cell{0, 3}))
+	assert.True(grid.cellSurvives(Cell{3, 4}))
+	assert.True(grid.cellSurvives(Cell{4, 4}))
 	// 4+ live neighbors dies
-	require.False(grid.cellSurvives(Cell{3, 3}))
-	require.False(grid.cellSurvives(Cell{4, 3}))
+	assert.False(grid.cellSurvives(Cell{3, 3}))
+	assert.False(grid.cellSurvives(Cell{4, 3}))
 
 	// 0-2 live neighbors stays dead
-	require.False(grid.cellSurvives(Cell{1, 0}))
-	require.False(grid.cellSurvives(Cell{2, 0}))
-	require.False(grid.cellSurvives(Cell{4, 0}))
-	require.False(grid.cellSurvives(Cell{3, 1}))
-	require.False(grid.cellSurvives(Cell{4, 1}))
-	require.False(grid.cellSurvives(Cell{0, 4}))
-	require.False(grid.cellSurvives(Cell{1, 4}))
+	assert.False(grid.cellSurvives(Cell{1, 0}))
+	assert.False(grid.cellSurvives(Cell{2, 0}))
+	assert.False(grid.cellSurvives(Cell{4, 0}))
+	assert.False(grid.cellSurvives(Cell{3, 1}))
+	assert.False(grid.cellSurvives(Cell{4, 1}))
+	assert.False(grid.cellSurvives(Cell{0, 4}))
+	assert.False(grid.cellSurvives(Cell{1, 4}))
 	// 3 live neighbors is revived
-	require.True(grid.cellSurvives(Cell{0, 1}))
-	require.True(grid.cellSurvives(Cell{2, 1}))
-	require.True(grid.cellSurvives(Cell{4, 2}))
-	require.True(grid.cellSurvives(Cell{2, 4}))
+	assert.True(grid.cellSurvives(Cell{0, 1}))
+	assert.True(grid.cellSurvives(Cell{2, 1}))
+	assert.True(grid.cellSurvives(Cell{4, 2}))
+	assert.True(grid.cellSurvives(Cell{2, 4}))
 	// 4+ live neighbors stays dead
-	require.False(grid.cellSurvives(Cell{1, 2}))
-	require.False(grid.cellSurvives(Cell{2, 2}))
-	require.False(grid.cellSurvives(Cell{2, 3}))
+	assert.False(grid.cellSurvives(Cell{1, 2}))
+	assert.False(grid.cellSurvives(Cell{2, 2}))
+	assert.False(grid.cellSurvives(Cell{2, 3}))
+}
+
+func TestCell_neighbors(t *testing.T) {
+	require := require.New(t)
+	cell := Cell{0, 2}
+	actual := cell.neighbors()
+	expected := []Cell{
+		Cell{-1, 1}, Cell{0, 1}, Cell{1, 1},
+		Cell{-1, 2}, Cell{1, 2},
+		Cell{-1, 3}, Cell{0, 3}, Cell{1, 3},
+	}
+	require.Equal(expected, actual)
 }
