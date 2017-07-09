@@ -38,17 +38,27 @@ func TestFromSlice(t *testing.T) {
 
 func TestFromString(t *testing.T) {
 	require := require.New(t)
-	var grid Grid
+	var grid, expected Grid
 	var err error
 
-	// Valid input.
+	// Valid input, newline-delimited.
 	grid, err = FromString(`
 		x..
 		...
 		.xx
     `)
 	require.Nil(err)
-	expected := make(Grid)
+	expected = make(Grid)
+	expected[Cell{0, 0}] = struct{}{}
+	expected[Cell{1, 2}] = struct{}{}
+	expected[Cell{2, 2}] = struct{}{}
+	require.Equal(expected, grid)
+
+	// Valid input, semicolon-delimited.
+	grid, err = FromString(`
+		x..;...;.xx     `)
+	require.Nil(err)
+	expected = make(Grid)
 	expected[Cell{0, 0}] = struct{}{}
 	expected[Cell{1, 2}] = struct{}{}
 	expected[Cell{2, 2}] = struct{}{}
