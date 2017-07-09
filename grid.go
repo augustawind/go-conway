@@ -1,5 +1,7 @@
 package main
 
+const aliveChar = `■`
+
 // Cell is an (x, y) coordinate.
 type Cell struct {
 	X int
@@ -9,13 +11,13 @@ type Cell struct {
 // Grid is a 2-D grid of Cells.
 type Grid map[Cell]struct{}
 
-// FromSlice constructs a new Grid from a slice of slices of bools.
-// Each true value will be converted into a Cell of its index ([y][x]).
-func FromSlice(rows [][]bool) Grid {
+// FromSlice constructs a new Grid from a slice of slices of ints.
+// Each nonzero value will be converted into a Cell of its index ([y][x]).
+func FromSlice(rows [][]int) Grid {
 	grid := make(Grid)
 	for y, row := range rows {
 		for x, val := range row {
-			if val {
+			if val != 0 {
 				grid.Add(Cell{x, y})
 			}
 		}
@@ -44,6 +46,24 @@ func (g Grid) Next() Grid {
 		}
 	}
 	return grid
+}
+
+// Show returns a human-readable string representation of a Grid.
+func (g Grid) Show() string {
+	str := ""
+	maxX, maxY := g.maxXY()
+	for y := 0; y <= maxY; y++ {
+		for x := 0; x <= maxX; x++ {
+			_, ok := g[Cell{x, y}]
+			if ok {
+				str += aliveChar
+			} else {
+				str += " "
+			}
+		}
+		str += "\n"
+	}
+	return str
 }
 
 func (g Grid) withAdjacentCells() Grid {
@@ -89,5 +109,17 @@ func (g Grid) liveNeighbors(cell Cell) int {
 			}
 		}
 	}
-	return n
+	return n - 1
+}
+
+func (g Grid) maxXY() (maxX, maxY int) {
+	for cell := range g {
+		if cell.X > maxX {
+			maxX = cell.X
+		}
+		if cell.Y > maxY {
+			maxY = cell.Y
+		}
+	}
+	return
 }
