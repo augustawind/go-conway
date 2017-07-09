@@ -9,12 +9,16 @@ import (
 )
 
 // WaitForInput pauses until <Enter> is pressed.
-func WaitForInput() {
+// Optionally sends `true` to given bool channel(s) when finished.
+func WaitForInput(cs ...chan<- bool) {
 	buf := bufio.NewReader(os.Stdin)
 	fmt.Print("\n")
 	buf.ReadBytes('\n')
-	goterm.MoveCursorUp(1)
+	goterm.MoveCursorUp(2)
 	goterm.Flush()
+	for range cs {
+		cs[0] <- true
+	}
 }
 
 // Guard checks an error and calls Fail with the given fmtArgs if it's not nil.

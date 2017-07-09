@@ -78,13 +78,14 @@ func NextTurn(grid Grid, opts RunConfig) (Grid, bool) {
 	}
 	fmt.Fprintln(opts.OutFile, grid.Show())
 
+	done := make(chan bool)
 	if opts.Spinner {
 		defer spinner.Done()
-		go spinner.Spin()
+		go spinner.Spin(done)
 	}
 
 	if opts.Interactive {
-		util.WaitForInput()
+		util.WaitForInput(done)
 	} else {
 		time.Sleep(opts.Delay)
 	}
