@@ -1,8 +1,7 @@
-package main
+package conway
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"time"
 )
@@ -12,19 +11,27 @@ type RunConfig struct {
 	Prompt   bool
 	MaxTurns int
 	Delay    time.Duration
-	Outfile  io.Writer
+	Outfile  *os.File
 }
 
-// DefaultRunConfig defines the default run settings.
-var DefaultRunConfig = RunConfig{
-	Prompt:   false,
-	MaxTurns: 0,
-	Delay:    time.Millisecond * 500,
-	Outfile:  os.Stdout,
+// DefaultRunConfig returns the default run settings.
+func DefaultRunConfig() RunConfig {
+	return RunConfig{
+		Prompt:   false,
+		MaxTurns: 0,
+		Delay:    time.Millisecond * 500,
+		Outfile:  os.Stdout,
+	}
 }
 
 // Run runs a Game of Life simulation.
 func Run(grid Grid, opts RunConfig) {
+	if opts.Outfile != os.Stdout {
+		defer func() {
+			opts.Outfile.Close()
+			fmt.Print()
+		}()
+	}
 	if opts.MaxTurns > 0 {
 		for i := 0; i < opts.MaxTurns; i++ {
 			grid = NextTurn(grid, opts)
@@ -36,6 +43,12 @@ func Run(grid Grid, opts RunConfig) {
 	}
 }
 
+// RunDefault calls Run with the default settings.
+func RunDefault(grid Grid) {
+	Run(grid, DefaultRunConfig())
+}
+
+// NextTurn runs a single turn of a Game of Life simulation.
 func NextTurn(grid Grid, opts RunConfig) Grid {
 	fmt.Fprintln(opts.Outfile, grid.Show())
 	time.Sleep(opts.Delay)
