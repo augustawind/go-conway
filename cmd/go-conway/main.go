@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
 
 	"github.com/dustinrohde/go-conway"
+	util "github.com/dustinrohde/go-conway/util/go-conway"
 	"github.com/urfave/cli"
 )
 
@@ -52,9 +52,19 @@ func initApp() *cli.App {
 			Destination: &config.MaxTurns,
 		},
 		cli.BoolFlag{
+			Name:        "clear, c",
+			Usage:       "Clear screen between each turn.",
+			Destination: &config.ClearScreen,
+		},
+		cli.BoolFlag{
 			Name:        "interactive, i",
 			Usage:       "Wait for input between each turn.",
 			Destination: &config.Interactive,
+		},
+		cli.BoolFlag{
+			Name:        "spinner, s",
+			Usage:       "Show an animated spinner between turns.",
+			Destination: &config.Spinner,
 		},
 	}
 
@@ -62,7 +72,7 @@ func initApp() *cli.App {
 		if path := c.String("outfile"); path != "-" {
 			// Write results to a file.
 			file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
-			Guard(err)
+			util.Guard(err)
 			config.OutFile = file
 			defer file.Close()
 		}
@@ -70,15 +80,15 @@ func initApp() *cli.App {
 		if path := c.String("grid"); path == "-" {
 			// Read Grid from stdin.
 			config.GridFile = os.Stdin
-		} else if path[0] == '@' {
+		} else if len(path) > 0 && path[0] == '@' {
 			// Read Grid from file.
 			file, err := os.OpenFile(path[1:], os.O_RDONLY, 0600)
-			Guard(err)
+			util.Guard(err)
 			config.GridFile = file
 			defer file.Close()
 		}
 		gridBytes, err := ioutil.ReadAll(config.GridFile)
-		Guard(err)
+		util.Guard(err)
 		grid = conway.FromString(string(gridBytes))
 
 		conway.Run(grid, config)
@@ -86,20 +96,4 @@ func initApp() *cli.App {
 	}
 
 	return app
-}
-
-func Guard(err error, fmtArgs ...interface{}) {
-	if err != nil {
-		if len(fmtArgs) > 0 {
-			Fail(fmtArgs[0], fmtArgs[1:]...)
-		} else {
-			Fail(err)
-		}
-	}
-}
-
-func Fail(msg interface{}, fmtArgs ...interface{}) {
-	fullMsg := fmt.Sprintf("conway: error: %s\n", msg)
-	fmt.Printf(fullMsg, fmtArgs...)
-	os.Exit(1)
 }

@@ -1,12 +1,14 @@
 package conway
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/buger/goterm"
+	util "github.com/dustinrohde/go-conway/util/go-conway"
 )
 
 // RunConfig holds settings for running the simulation.
@@ -15,8 +17,11 @@ type RunConfig struct {
 	OutFile      io.Writer
 	Delay        time.Duration
 	MaxTurns     int
-	KeepCentered bool
+	ClearScreen  bool // TODO
 	Interactive  bool
+	Spinner      bool // TODO
+	KeepCentered bool // TODO
+	FixedSize    int  // TODO
 }
 
 var defaultGridStr = strings.Join(
@@ -41,6 +46,11 @@ func DefaultRunConfig() RunConfig {
 	}
 }
 
+var spinner = util.Spinner{
+	Seq:   []string{"-", "/", "|", "\\"},
+	Delay: 50 * time.Millisecond,
+}
+
 // Run runs a Game of Life simulation.
 func Run(grid Grid, opts RunConfig) {
 	ok := true
@@ -62,17 +72,22 @@ func RunDefault(grid Grid) {
 
 // NextTurn runs a single turn of a Game of Life simulation.
 func NextTurn(grid Grid, opts RunConfig) (Grid, bool) {
+	if opts.ClearScreen {
+		goterm.Clear()
+		goterm.Flush()
+	}
 	fmt.Fprintln(opts.OutFile, grid.Show())
+
+	if opts.Spinner {
+		defer spinner.Done()
+		go spinner.Spin()
+	}
+
 	if opts.Interactive {
-		waitForInput()
+		util.WaitForInput()
 	} else {
 		time.Sleep(opts.Delay)
 	}
-	return grid.Next()
-}
 
-func waitForInput() {
-	buf := bufio.NewReader(os.Stdin)
-	fmt.Print("\n")
-	buf.ReadBytes('\n')
+	return grid.Next()
 }
