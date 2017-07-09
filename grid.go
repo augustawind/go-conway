@@ -48,24 +48,6 @@ func (g Grid) Next() Grid {
 	return grid
 }
 
-// Show returns a human-readable string representation of a Grid.
-func (g Grid) Show() string {
-	str := ""
-	maxX, maxY := g.maxXY()
-	for y := 0; y <= maxY; y++ {
-		for x := 0; x <= maxX; x++ {
-			_, ok := g[Cell{x, y}]
-			if ok {
-				str += aliveChar
-			} else {
-				str += " "
-			}
-		}
-		str += "\n"
-	}
-	return str
-}
-
 func (g Grid) withAdjacentCells() Grid {
 	grid := make(Grid)
 	for cell := range g {
@@ -103,13 +85,35 @@ func (g Grid) liveNeighbors(cell Cell) int {
 	n := 0
 	for y := cell.Y - 1; y <= cell.Y+1; y++ {
 		for x := cell.X - 1; x <= cell.X+1; x++ {
-			_, ok := g[Cell{x, y}]
+			c := Cell{x, y}
+			if cell == c {
+				continue
+			}
+			_, ok := g[c]
 			if ok {
 				n++
 			}
 		}
 	}
-	return n - 1
+	return n
+}
+
+// Show returns a human-readable string representation of a Grid.
+func (g Grid) Show() string {
+	str := ""
+	maxX, maxY := g.maxXY()
+	for y := 0; y <= maxY; y++ {
+		for x := 0; x <= maxX; x++ {
+			_, ok := g[Cell{x, y}]
+			if ok {
+				str += aliveChar
+			} else {
+				str += " "
+			}
+		}
+		str += "\n"
+	}
+	return str
 }
 
 func (g Grid) maxXY() (maxX, maxY int) {
