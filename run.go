@@ -1,6 +1,7 @@
 package conway
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"os"
@@ -10,11 +11,12 @@ import (
 
 // RunConfig holds settings for running the simulation.
 type RunConfig struct {
-	GridFile    io.Reader
-	OutFile     io.Writer
-	Delay       time.Duration
-	MaxTurns    int
-	Interactive bool
+	GridFile     io.Reader
+	OutFile      io.Writer
+	Delay        time.Duration
+	MaxTurns     int
+	KeepCentered bool
+	Interactive  bool
 }
 
 var defaultGridStr = strings.Join(
@@ -61,6 +63,16 @@ func RunDefault(grid Grid) {
 // NextTurn runs a single turn of a Game of Life simulation.
 func NextTurn(grid Grid, opts RunConfig) (Grid, bool) {
 	fmt.Fprintln(opts.OutFile, grid.Show())
-	time.Sleep(opts.Delay)
+	if opts.Interactive {
+		waitForInput()
+	} else {
+		time.Sleep(opts.Delay)
+	}
 	return grid.Next()
+}
+
+func waitForInput() {
+	buf := bufio.NewReader(os.Stdin)
+	fmt.Print("\n")
+	buf.ReadBytes('\n')
 }
