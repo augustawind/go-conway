@@ -66,19 +66,34 @@ func TestFromString(t *testing.T) {
 
 func TestRandomGrid(t *testing.T) {
 	require := require.New(t)
-	var grid Grid
+	var grid, expected Grid
 	var err error
 
 	// All living Cells.
 	grid, err = RandomGrid(3, 3, 1.0)
 	require.Nil(err)
-	expected := make(Grid)
+	expected = make(Grid)
 	expected.AddMany(
 		Cell{0, 0}, Cell{1, 0}, Cell{2, 0},
 		Cell{0, 1}, Cell{1, 1}, Cell{2, 1},
 		Cell{0, 2}, Cell{1, 2}, Cell{2, 2},
 	)
 	require.Equal(expected, grid)
+
+	// Some living Cells.
+	grid, err = RandomGrid(3, 3, 0.5)
+	require.Nil(err)
+
+	// No living Cells.
+	grid, err = RandomGrid(0, 3, 0.5)
+	require.NotNil(err)
+	require.Nil(grid)
+	grid, err = RandomGrid(3, 0, 0.5)
+	require.NotNil(err)
+	require.Nil(grid)
+	grid, err = RandomGrid(3, 3, 0)
+	require.NotNil(err)
+	require.Nil(grid)
 }
 
 func TestCell_neighbors(t *testing.T) {

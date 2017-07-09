@@ -73,15 +73,20 @@ func trimAny(s string, cutsets []string) string {
 // RandomGrid creates a Grid of random Cells in the given dimensions.
 // `p` is the probability of a Cell being generated, from 0 to 1.
 func RandomGrid(width, height int, p float64) (Grid, error) {
+	if width < 1 || height < 1 || p == 0.0 {
+		return nil, ErrEmptyGrid
+	}
 	grid := make(Grid)
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
-			if p > rand.Float64() {
-				grid.Add(Cell{x, y})
+	for len(grid) == 0 {
+		for y := 0; y < height; y++ {
+			for x := 0; x < width; x++ {
+				if p > rand.Float64() {
+					grid.Add(Cell{x, y})
+				}
 			}
 		}
 	}
-	return requireNonEmpty(grid)
+	return grid, nil
 }
 
 func requireNonEmpty(grid Grid) (Grid, error) {
