@@ -30,6 +30,13 @@ func (g Grid) Add(cell Cell) {
 	g[cell] = struct{}{}
 }
 
+// AddMany adds one or more Cells to a Grid.
+func (g Grid) AddMany(cells ...Cell) {
+	for _, cell := range cells {
+		g.Add(cell)
+	}
+}
+
 // Remove removes a Cell from a Grid.
 func (g Grid) Remove(cell Cell) {
 	delete(g, cell)
@@ -52,9 +59,7 @@ func (g Grid) withAdjacentCells() Grid {
 	grid := make(Grid)
 	for cell := range g {
 		grid.Add(cell)
-		for neighbor := range cell.adjacentCells() {
-			grid.Add(neighbor)
-		}
+		grid.AddMany(cell.neighbors()...)
 	}
 	return grid
 }
