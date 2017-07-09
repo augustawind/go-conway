@@ -16,7 +16,7 @@ type RunConfig struct {
 }
 
 // DefaultRunConfig defines the default run settings.
-const DefaultRunConfig = RunConfig{
+var DefaultRunConfig = RunConfig{
 	Prompt:   false,
 	MaxTurns: 0,
 	Delay:    time.Millisecond * 500,
@@ -27,17 +27,17 @@ const DefaultRunConfig = RunConfig{
 func Run(grid Grid, opts RunConfig) {
 	if opts.MaxTurns > 0 {
 		for i := 0; i < opts.MaxTurns; i++ {
-			Turn(grid, opts)
+			grid = NextTurn(grid, opts)
 		}
 	} else {
 		for {
-			Turn(grid, opts)
+			grid = NextTurn(grid, opts)
 		}
 	}
 }
 
-func Turn(grid Grid, opts RunConfig) {
+func NextTurn(grid Grid, opts RunConfig) Grid {
 	fmt.Fprintln(opts.Outfile, grid.Show())
-	time.Sleep(delay)
-	grid = grid.Next()
+	time.Sleep(opts.Delay)
+	return grid.Next()
 }
