@@ -27,10 +27,7 @@ func DefaultRunConfig() RunConfig {
 // Run runs a Game of Life simulation.
 func Run(grid Grid, opts RunConfig) {
 	if opts.Outfile != os.Stdout {
-		defer func() {
-			opts.Outfile.Close()
-			fmt.Print()
-		}()
+		defer opts.Outfile.Close
 	}
 	if opts.MaxTurns > 0 {
 		for i := 0; i < opts.MaxTurns; i++ {

@@ -170,9 +170,22 @@ func TestGrid_maxXY(t *testing.T) {
 		{0, 0, 1, 0},
 		{0, 1, 1, 0},
 	})
-	maxX, maxY := grid.maxXY()
-	require.Equal(2, maxX)
-	require.Equal(3, maxY)
+	max := grid.maxXY()
+	require.Equal(Cell{2, 3}, max)
+}
+
+func TestGrid_xyBounds(t *testing.T) {
+	require := require.New(t)
+	grid := FromSlice([][]int{
+		{1, 0, 0, 0},
+		{0, 0, 1, 0},
+		{0, 0, 1, 0},
+		{0, 1, 1, 0},
+	})
+	grid.Add(Cell{-2, 0})
+	min, max := grid.xyBounds()
+	require.Equal(Cell{-2, 0}, min)
+	require.Equal(Cell{2, 3}, max)
 }
 
 func TestGrid_Show(t *testing.T) {
