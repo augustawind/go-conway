@@ -1,4 +1,6 @@
-package main
+package conway
+
+import "strings"
 
 // LiveCellRepr is the string used to represent a live Cell.
 const LiveCellRepr = `■`
@@ -22,6 +24,26 @@ func FromSlice(rows [][]int) Grid {
 	for y, row := range rows {
 		for x, val := range row {
 			if val != 0 {
+				grid.Add(Cell{x, y})
+			}
+		}
+	}
+	return grid
+}
+
+// FromString constructs a new Grid from a multiline string.
+// Each line represents a row, and each occurrence of the rune 'x' is
+// converted to a Cell in that position in the Grid.
+func FromString(s string) Grid {
+	grid := make(Grid)
+	srows := strings.Split(s, "\n")
+	if len(srows) == 0 || len(srows[0]) == 0 {
+		return grid
+	}
+
+	for y, row := range strings.Split(s, "\n") {
+		for x, char := range row {
+			if char == 'x' {
 				grid.Add(Cell{x, y})
 			}
 		}
