@@ -64,11 +64,17 @@ func (g Grid) withAdjacentCells() Grid {
 	return grid
 }
 
-func (cell Cell) adjacentCells() Grid {
-	cells := make(Grid)
+func (cell Cell) neighbors() []Cell {
+	cells := make([]Cell, 8)
+	i := 0
 	for y := cell.Y - 1; y <= cell.Y+1; y++ {
 		for x := cell.X - 1; x <= cell.X+1; x++ {
-			cells.Add(Cell{x, y})
+			c := Cell{x, y}
+			if cell == c {
+				continue
+			}
+			cells[i] = c
+			i++
 		}
 	}
 	return cells
@@ -88,16 +94,10 @@ func (g Grid) cellSurvives(cell Cell) bool {
 
 func (g Grid) liveNeighbors(cell Cell) int {
 	n := 0
-	for y := cell.Y - 1; y <= cell.Y+1; y++ {
-		for x := cell.X - 1; x <= cell.X+1; x++ {
-			c := Cell{x, y}
-			if cell == c {
-				continue
-			}
-			_, ok := g[c]
-			if ok {
-				n++
-			}
+	for _, c := range cell.neighbors() {
+		_, ok := g[c]
+		if ok {
+			n++
 		}
 	}
 	return n
