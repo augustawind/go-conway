@@ -26,18 +26,17 @@ func TestFromSlice(t *testing.T) {
 	require.Subset(actual, expected)
 
 	// Invalid input.
-	grid, err = FromSlice([][]int{
+	_, err = FromSlice([][]int{
 		{0, 0, 0},
 		{0, 0, 0},
 		{0, 0, 0},
 	})
-	require.NotNil(err)
-	require.Nil(grid)
+	require.Nil(err)
 }
 
 func TestFromString(t *testing.T) {
 	require := require.New(t)
-	var grid, expected Grid
+	var grid Grid
 	var err error
 
 	// Valid input, newline-delimited.
@@ -47,10 +46,7 @@ func TestFromString(t *testing.T) {
 		.xx
     `)
 	require.Nil(err)
-	expected = make(Grid)
-	expected[Cell{0, 0}] = Alive
-	expected[Cell{1, 2}] = Alive
-	expected[Cell{2, 2}] = Alive
+	expected := []Cell{{0, 0}, {1, 2}, {2, 2}}
 	actual := aliveCells(grid)
 	require.Subset(expected, actual)
 	require.Subset(actual, expected)
@@ -59,10 +55,7 @@ func TestFromString(t *testing.T) {
 	grid, err = FromString(`
 		x..;...;.xx     `)
 	require.Nil(err)
-	expected = make(Grid)
-	expected[Cell{0, 0}] = Alive
-	expected[Cell{1, 2}] = Alive
-	expected[Cell{2, 2}] = Alive
+	expected = []Cell{{0, 0}, {1, 2}, {2, 2}}
 	actual = aliveCells(grid)
 	require.Subset(expected, actual)
 	require.Subset(actual, expected)
@@ -73,24 +66,23 @@ func TestFromString(t *testing.T) {
         ...
         ...
     `)
-	require.NotNil(err)
-	require.Nil(grid)
+	require.Nil(err)
 }
 
 func TestRandomGrid(t *testing.T) {
 	require := require.New(t)
-	var grid, expected Grid
+	var grid, _expected Grid
 	var err error
 
 	// All living Cells.
 	grid, err = RandomGrid(3, 3, 1.0)
 	require.Nil(err)
-	expected = make(Grid)
-	expected, _ = FromSlice([][]int{
+	_expected, _ = FromSlice([][]int{
 		{1, 1, 1},
 		{1, 1, 1},
 		{1, 1, 1},
 	})
+	expected := aliveCells(_expected)
 	actual := aliveCells(grid)
 	require.Subset(expected, actual)
 	require.Subset(actual, expected)
@@ -126,12 +118,13 @@ func TestCell_neighbors(t *testing.T) {
 func TestGrid_liveNeighbors(t *testing.T) {
 	require := require.New(t)
 	grid := mkGrid([][]int{
-		{1, 0, 0, 0},
+		{1, 0, 0, 1},
 		{1, 1, 1, 0},
 		{0, 0, 1, 1},
 		{0, 0, 0, 0},
 	})
 	require.Equal(2, grid.liveNeighbors(Cell{0, 0}))
+	require.Equal(4, grid.liveNeighbors(Cell{2, 1}))
 	require.Equal(3, grid.liveNeighbors(Cell{2, 2}))
 }
 
@@ -175,9 +168,9 @@ func TestGrid_nextCell(t *testing.T) {
 	assert.Equal(Alive, grid.nextCell(Cell{4, 2}))
 	assert.Equal(Alive, grid.nextCell(Cell{2, 4}))
 	// 4+ live neighbors stays dead
-	assert.Equal(Alive, grid.nextCell(Cell{1, 2}))
-	assert.Equal(Alive, grid.nextCell(Cell{2, 2}))
-	assert.Equal(Alive, grid.nextCell(Cell{2, 3}))
+	assert.Equal(Dead, grid.nextCell(Cell{1, 2}))
+	assert.Equal(Dead, grid.nextCell(Cell{2, 2}))
+	assert.Equal(Dead, grid.nextCell(Cell{2, 3}))
 }
 
 func TestGrid_withNeighbors(t *testing.T) {
@@ -248,8 +241,11 @@ func TestGrid_Next(t *testing.T) {
 	}
 
 	for _, pair := range pairs {
-		actual, _ := pair.start.Next()
-		require.Equal(pair.next, actual)
+		next, _ := pair.start.Next()
+		expected := aliveCells(pair.next)
+		actual := aliveCells(next)
+		require.Subset(expected, actual)
+		require.Subset(actual, expected)
 	}
 }
 
