@@ -7,14 +7,23 @@ import (
 	"strings"
 )
 
+// Grid is a 2-D grid of Cells.
+type Grid map[Cell]CellState
+
 // Cell is an (x, y) coordinate.
 type Cell struct {
-	X int
-	Y int
+	X     int
+	Y     int
 }
 
-// Grid is a 2-D grid of Cells.
-type Grid map[Cell]struct{}
+// CellState represents the binary status of a Cell (alive/dead).
+type CellState bool
+
+// Alive and Dead are assigned to Cell.State to indicate whether the Cell is alive or dead.
+const (
+	Alive CellState = true
+	Dead  CellState = false
+)
 
 /*
  * GRID CREATION
@@ -29,9 +38,7 @@ func FromSlice(rows [][]int) (Grid, error) {
 	grid := make(Grid)
 	for y, row := range rows {
 		for x, val := range row {
-			if val != 0 {
-				grid.Add(Cell{x, y})
-			}
+			grid.Set(Cell{x, y}, val != 0)
 		}
 	}
 	return requireNonEmpty(grid)
@@ -40,8 +47,11 @@ func FromSlice(rows [][]int) (Grid, error) {
 // GridSplitRegex is the pattern used to split a Grid string into rows.
 var GridSplitRegex = regexp.MustCompile("[\n;]")
 
-// LiveCellInputChar represents a live Cell in a Grid string.
-var LiveCellInputChar = 'x'
+const (
+	TokenLiveCell = 'x'
+	TokenDeadCell = '.'
+	TokenComment  = '#'
+)
 
 var trimChars = []string{"\n", "\r", "\t"}
 
@@ -55,8 +65,13 @@ func FromString(s string) (Grid, error) {
 	for y, row := range rows {
 		row = trimAny(row, trimChars)
 		for x, char := range row {
-			if char == LiveCellInputChar {
-				grid.Add(Cell{x, y})
+			switch char {
+			case TokenLiveCell:
+				grid.Set(Cell{x, y}, Alive)
+			case TokenDeadCell:
+				grid.Set(Cell{x, y}, Dead)
+			case TokenComment:
+				continue
 			}
 		}
 	}
@@ -80,9 +95,8 @@ func RandomGrid(width, height int, p float64) (Grid, error) {
 	for len(grid) == 0 {
 		for y := 0; y < height; y++ {
 			for x := 0; x < width; x++ {
-				if p > rand.Float64() {
-					grid.Add(Cell{x, y})
-				}
+				state := p > rand.Float64()
+				grid.Set(Cell{x, y}, CellState(state))
 			}
 		}
 	}
@@ -96,15 +110,16 @@ func requireNonEmpty(grid Grid) (Grid, error) {
 	return grid, nil
 }
 
-// Add adds a Cell to a Grid.
-func (g Grid) Add(cell Cell) {
-	g[cell] = struct{}{}
+// Set sets a Cell in a Grid to alive or dead.
+func (g Grid) Set(cell Cell, state CellState) {
+	g[cell] = state
 }
 
-// AddMany adds one or more Cells to a Grid.
-func (g Grid) AddMany(cells ...Cell) {
-	for _, cell := range cells {
-		g.Add(cell)
+// Add is like Set but it will only update a Cell if it already exists.
+func (g Grid) Add(cell Cell, state CellState) {
+	_, ok := g[cell]
+	if !ok {
+		g.Set(cell, state)
 	}
 }
 
@@ -121,23 +136,21 @@ func (g Grid) Remove(cell Cell) {
 // It returns the new Grid and an ok value. The ok value will be true if
 // the Grid still has live Cells, or false if the Grid is empty.
 func (g Grid) Next() (Grid, bool) {
-	grid := make(Grid)
+	nextGrid := make(Grid)
 	for cell := range g.withNeighbors() {
-		if g.cellSurvives(cell) {
-			grid.Add(cell)
-		} else {
-			grid.Remove(cell)
-		}
+		nextGrid.Set(cell, g.nextCell(cell))
 	}
-	ok := len(grid) > 0
-	return grid, ok
+	ok := len(nextGrid) > 0
+	return nextGrid, ok
 }
 
 func (g Grid) withNeighbors() Grid {
 	grid := make(Grid)
 	for cell := range g {
-		grid.Add(cell)
-		grid.AddMany(cell.neighbors()...)
+		grid.Add(cell, Dead)
+		for _, c := range cell.neighbors() {
+			grid.Add(c, Dead)
+		}
 	}
 	return grid
 }
@@ -158,23 +171,21 @@ func (cell Cell) neighbors() []Cell {
 	return cells
 }
 
-func (g Grid) cellSurvives(cell Cell) bool {
+func (g Grid) nextCell(cell Cell) CellState {
 	switch g.liveNeighbors(cell) {
 	case 3:
-		return true
+		return Alive
 	case 2:
-		_, ok := g[cell]
-		return ok
+		return g[cell]
 	default:
-		return false
+		return Dead
 	}
 }
 
 func (g Grid) liveNeighbors(cell Cell) int {
 	n := 0
 	for _, c := range cell.neighbors() {
-		_, ok := g[c]
-		if ok {
+		if g[c] == Alive {
 			n++
 		}
 	}
@@ -197,8 +208,7 @@ func (g Grid) Show() string {
 	min, max := g.xyBounds()
 	for y := min.Y; y <= max.Y; y++ {
 		for x := min.X; x <= max.X; x++ {
-			_, ok := g[Cell{x, y}]
-			if ok {
+			if g[Cell{x, y}] == Alive {
 				str += LiveCellRepr
 			} else {
 				str += DeadCellRepr
@@ -215,14 +225,6 @@ func (g Grid) xyBounds() (min, max Cell) {
 		min.Y = minimum(cell.Y, min.Y)
 		max.X = maximum(cell.X, max.X)
 		max.Y = maximum(cell.Y, max.Y)
-	}
-	return
-}
-
-func (g Grid) maxXY() (max Cell) {
-	for cell := range g {
-		max.X = maximum(max.X, cell.X)
-		max.Y = maximum(max.Y, cell.Y)
 	}
 	return
 }

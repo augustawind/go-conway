@@ -20,11 +20,10 @@ func TestFromSlice(t *testing.T) {
 		{0, 1, 1},
 	})
 	require.Nil(err)
-	expected := make(Grid)
-	expected[Cell{0, 0}] = struct{}{}
-	expected[Cell{1, 2}] = struct{}{}
-	expected[Cell{2, 2}] = struct{}{}
-	require.Equal(expected, grid)
+	expected := []Cell{{0, 0}, {1, 2}, {2, 2}}
+	actual := aliveCells(grid)
+	require.Subset(expected, actual)
+	require.Subset(actual, expected)
 
 	// Invalid input.
 	grid, err = FromSlice([][]int{
@@ -34,6 +33,16 @@ func TestFromSlice(t *testing.T) {
 	})
 	require.NotNil(err)
 	require.Nil(grid)
+}
+
+func aliveCells(grid Grid) []Cell {
+	cells := []Cell{}
+	for cell, state := range grid {
+		if state == Alive {
+			cells = append(cells, cell)
+		}
+	}
+	return cells
 }
 
 func TestFromString(t *testing.T) {
@@ -49,20 +58,24 @@ func TestFromString(t *testing.T) {
     `)
 	require.Nil(err)
 	expected = make(Grid)
-	expected[Cell{0, 0}] = struct{}{}
-	expected[Cell{1, 2}] = struct{}{}
-	expected[Cell{2, 2}] = struct{}{}
-	require.Equal(expected, grid)
+	expected[Cell{0, 0}] = Alive
+	expected[Cell{1, 2}] = Alive
+	expected[Cell{2, 2}] = Alive
+	actual := aliveCells(grid)
+	require.Subset(expected, actual)
+	require.Subset(actual, expected)
 
 	// Valid input, semicolon-delimited.
 	grid, err = FromString(`
 		x..;...;.xx     `)
 	require.Nil(err)
 	expected = make(Grid)
-	expected[Cell{0, 0}] = struct{}{}
-	expected[Cell{1, 2}] = struct{}{}
-	expected[Cell{2, 2}] = struct{}{}
-	require.Equal(expected, grid)
+	expected[Cell{0, 0}] = Alive
+	expected[Cell{1, 2}] = Alive
+	expected[Cell{2, 2}] = Alive
+	actual = aliveCells(grid)
+	require.Subset(expected, actual)
+	require.Subset(actual, expected)
 
 	// Invalid input.
 	grid, err = FromString(`
@@ -83,12 +96,14 @@ func TestRandomGrid(t *testing.T) {
 	grid, err = RandomGrid(3, 3, 1.0)
 	require.Nil(err)
 	expected = make(Grid)
-	expected.AddMany(
-		Cell{0, 0}, Cell{1, 0}, Cell{2, 0},
-		Cell{0, 1}, Cell{1, 1}, Cell{2, 1},
-		Cell{0, 2}, Cell{1, 2}, Cell{2, 2},
-	)
-	require.Equal(expected, grid)
+	expected, _ = FromSlice([][]int{
+		{1, 1, 1},
+		{1, 1, 1},
+		{1, 1, 1},
+	})
+	actual := aliveCells(grid)
+	require.Subset(expected, actual)
+	require.Subset(actual, expected)
 
 	// Some living Cells.
 	grid, err = RandomGrid(3, 3, 0.5)
@@ -130,7 +145,7 @@ func TestGrid_liveNeighbors(t *testing.T) {
 	require.Equal(3, grid.liveNeighbors(Cell{2, 2}))
 }
 
-func TestGrid_cellSurvives(t *testing.T) {
+func TestGrid_nextCell(t *testing.T) {
 	assert := assert.New(t)
 	grid := mkGrid([][]int{
 		{1, 0, 0, 1, 0},
@@ -140,39 +155,39 @@ func TestGrid_cellSurvives(t *testing.T) {
 		{0, 0, 0, 1, 1},
 	})
 	// 0 live neighbors dies
-	assert.False(grid.cellSurvives(Cell{3, 0}))
+	assert.Equal(Dead, grid.nextCell(Cell{3, 0}))
 	// 1 live neighbor dies
-	assert.False(grid.cellSurvives(Cell{0, 0}))
+	assert.Equal(Dead, grid.nextCell(Cell{0, 0}))
 	// 2 live neighbors lives
-	assert.True(grid.cellSurvives(Cell{1, 1}))
-	assert.True(grid.cellSurvives(Cell{3, 2}))
-	assert.True(grid.cellSurvives(Cell{1, 3}))
+	assert.Equal(Alive, grid.nextCell(Cell{1, 1}))
+	assert.Equal(Alive, grid.nextCell(Cell{3, 2}))
+	assert.Equal(Alive, grid.nextCell(Cell{1, 3}))
 	// 3 live neighbors lives
-	assert.True(grid.cellSurvives(Cell{0, 2}))
-	assert.True(grid.cellSurvives(Cell{0, 3}))
-	assert.True(grid.cellSurvives(Cell{3, 4}))
-	assert.True(grid.cellSurvives(Cell{4, 4}))
+	assert.Equal(Alive, grid.nextCell(Cell{0, 2}))
+	assert.Equal(Alive, grid.nextCell(Cell{0, 3}))
+	assert.Equal(Alive, grid.nextCell(Cell{3, 4}))
+	assert.Equal(Alive, grid.nextCell(Cell{4, 4}))
 	// 4+ live neighbors dies
-	assert.False(grid.cellSurvives(Cell{3, 3}))
-	assert.False(grid.cellSurvives(Cell{4, 3}))
+	assert.Equal(Dead, grid.nextCell(Cell{3, 3}))
+	assert.Equal(Dead, grid.nextCell(Cell{4, 3}))
 
 	// 0-2 live neighbors stays dead
-	assert.False(grid.cellSurvives(Cell{1, 0}))
-	assert.False(grid.cellSurvives(Cell{2, 0}))
-	assert.False(grid.cellSurvives(Cell{4, 0}))
-	assert.False(grid.cellSurvives(Cell{3, 1}))
-	assert.False(grid.cellSurvives(Cell{4, 1}))
-	assert.False(grid.cellSurvives(Cell{0, 4}))
-	assert.False(grid.cellSurvives(Cell{1, 4}))
+	assert.Equal(Dead, grid.nextCell(Cell{1, 0}))
+	assert.Equal(Dead, grid.nextCell(Cell{2, 0}))
+	assert.Equal(Dead, grid.nextCell(Cell{4, 0}))
+	assert.Equal(Dead, grid.nextCell(Cell{3, 1}))
+	assert.Equal(Dead, grid.nextCell(Cell{4, 1}))
+	assert.Equal(Dead, grid.nextCell(Cell{0, 4}))
+	assert.Equal(Dead, grid.nextCell(Cell{1, 4}))
 	// 3 live neighbors is revived
-	assert.True(grid.cellSurvives(Cell{0, 1}))
-	assert.True(grid.cellSurvives(Cell{2, 1}))
-	assert.True(grid.cellSurvives(Cell{4, 2}))
-	assert.True(grid.cellSurvives(Cell{2, 4}))
+	assert.Equal(Alive, grid.nextCell(Cell{0, 1}))
+	assert.Equal(Alive, grid.nextCell(Cell{2, 1}))
+	assert.Equal(Alive, grid.nextCell(Cell{4, 2}))
+	assert.Equal(Alive, grid.nextCell(Cell{2, 4}))
 	// 4+ live neighbors stays dead
-	assert.False(grid.cellSurvives(Cell{1, 2}))
-	assert.False(grid.cellSurvives(Cell{2, 2}))
-	assert.False(grid.cellSurvives(Cell{2, 3}))
+	assert.Equal(Alive, grid.nextCell(Cell{1, 2}))
+	assert.Equal(Alive, grid.nextCell(Cell{2, 2}))
+	assert.Equal(Alive, grid.nextCell(Cell{2, 3}))
 }
 
 func TestGrid_withNeighbors(t *testing.T) {
@@ -182,14 +197,15 @@ func TestGrid_withNeighbors(t *testing.T) {
 		{0, 1},
 	})
 	actual := grid.withNeighbors()
-	expected := make(Grid)
-	expected.AddMany(
+	expected := []Cell{
 		Cell{-1, -1}, Cell{0, -1}, Cell{1, -1},
 		Cell{-1, 0}, Cell{0, 0}, Cell{1, 0}, Cell{2, 0},
 		Cell{-1, 1}, Cell{0, 1}, Cell{1, 1}, Cell{2, 1},
 		Cell{0, 2}, Cell{1, 2}, Cell{2, 2},
-	)
-	require.Equal(expected, actual)
+	}
+	actual_ := aliveCells(actual)
+	require.Subset(expected, actual_)
+	require.Subset(actual_, expected)
 }
 
 func TestGrid_Next(t *testing.T) {
@@ -247,18 +263,6 @@ func TestGrid_Next(t *testing.T) {
 	}
 }
 
-func TestGrid_maxXY(t *testing.T) {
-	require := require.New(t)
-	grid := mkGrid([][]int{
-		{1, 0, 0, 0},
-		{0, 0, 1, 0},
-		{0, 0, 1, 0},
-		{0, 1, 1, 0},
-	})
-	max := grid.maxXY()
-	require.Equal(Cell{2, 3}, max)
-}
-
 func TestGrid_xyBounds(t *testing.T) {
 	require := require.New(t)
 	grid := mkGrid([][]int{
@@ -267,10 +271,10 @@ func TestGrid_xyBounds(t *testing.T) {
 		{0, 0, 1, 0},
 		{0, 1, 1, 0},
 	})
-	grid.Add(Cell{-2, 0})
+	grid.Set(Cell{-2, 0}, Alive)
 	min, max := grid.xyBounds()
 	require.Equal(Cell{-2, 0}, min)
-	require.Equal(Cell{2, 3}, max)
+	require.Equal(Cell{3, 3}, max)
 }
 
 func TestGrid_Show(t *testing.T) {

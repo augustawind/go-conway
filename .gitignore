@@ -29,3 +29,6 @@ _testmain.go
 # Editors
 *.sw[o,p]
 .idea
+
+# Personal files
+TODO.md

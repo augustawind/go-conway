@@ -53,7 +53,7 @@ func initApp() *cli.App {
 					grid = readGrid(os.Stdin)
 				} else if arg[0] == '@' {
 					// Read Grid from file.
-					file, err := os.Open(arg[1:])
+					file, err := os.Open(strings.TrimSpace(arg[1:]))
 					util.Guard(err)
 					defer file.Close()
 					grid = readGrid(file)
