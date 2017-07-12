@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/buger/goterm"
@@ -13,7 +12,6 @@ import (
 
 // RunConfig holds settings for running the simulation.
 type RunConfig struct {
-	GridFile     io.Reader
 	OutFile      io.Writer
 	Delay        time.Duration
 	MaxTurns     int
@@ -24,25 +22,16 @@ type RunConfig struct {
 	FixedSize    int  // TODO
 }
 
-var defaultGridStr = strings.Join(
-	[]string{
-		".....",
-		"..x..",
-		"...x.",
-		".xxx.",
-		".....",
-	},
-	"\n",
-)
-
 // DefaultRunConfig returns the default run settings.
 func DefaultRunConfig() RunConfig {
 	return RunConfig{
-		GridFile:    strings.NewReader(defaultGridStr),
-		OutFile:     os.Stdout,
-		Delay:       time.Millisecond * 500,
-		MaxTurns:    0,
-		Interactive: false,
+		OutFile:      os.Stdout,
+		Delay:        500 * time.Millisecond,
+		MaxTurns:     0,
+		ClearScreen:  true,
+		Interactive:  false,
+		Spinner:      false,
+		KeepCentered: false,
 	}
 }
 

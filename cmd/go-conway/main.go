@@ -1,12 +1,13 @@
 package main
 
 import (
+	"io"
 	"io/ioutil"
 	"os"
 	"strings"
 
 	"github.com/dustinrohde/go-conway"
-	util "github.com/dustinrohde/go-conway/util/go-conway"
+	"github.com/dustinrohde/go-conway/util/go-conway"
 	"github.com/urfave/cli"
 )
 
@@ -16,14 +17,93 @@ func main() {
 }
 
 func initApp() *cli.App {
+	var grid conway.Grid
+	var err error
+	config := conway.DefaultRunConfig()
+
 	app := cli.NewApp()
 	app.Name = "conway"
 	app.Usage = "Run Conway's Game of Life simulation."
 
-	var grid conway.Grid
-	config := conway.DefaultRunConfig()
+	cli.HelpFlag = cli.BoolFlag{
+		Name: "help",
+		Usage: "show help",
+	}
 
-	app.Flags = []cli.Flag{
+	app.Commands = []cli.Command{
+		{
+			Name:    "defined",
+			Aliases: []string{"def"},
+			Usage:   "start with a predefined grid",
+			Flags: withCommonFlags(config,
+				cli.StringFlag{
+					Name:  "grid, g",
+					Value: "-",
+					Usage: strings.Join([]string{
+						"Starting grid.",
+						"\t\tIf `FILE` starts with '@', interpret it as a file path.",
+						"\t\tIf `FILE` is '-', read from stdout.",
+					}, "\n"),
+				},
+			),
+			Action: func(c *cli.Context) error {
+				arg := c.String("grid")
+				if arg == "-" {
+					// Read Grid from stdin.
+					grid = readGrid(os.Stdin)
+				} else if arg[0] == '@' {
+					// Read Grid from file.
+					file, err := os.Open(arg[1:])
+					util.Guard(err)
+					defer file.Close()
+					grid = readGrid(file)
+				} else {
+					// Read Grid from argument.
+					grid, err = conway.FromString(arg)
+					util.Guard(err)
+				}
+				setOutFile(config, c.String("outfile"))
+				conway.Run(grid, config)
+				return nil
+			},
+		},
+		{
+			Name:    "random",
+			Aliases: []string{"rand"},
+			Usage:   "start with a randomly generated grid",
+			Flags: withCommonFlags(config,
+				cli.IntFlag{
+					Name:  "width, w",
+					Value: 9,
+					Usage: "max `WIDTH` of the grid",
+				},
+				cli.IntFlag{
+					Name:  "height, h",
+					Value: 9,
+					Usage: "max `HEIGHT` of the grid",
+				},
+				cli.Float64Flag{
+					Name:  "probability, p",
+					Value: 0.5,
+					Usage: "probability of living cells, where 0 < `PROB` <= 1",
+				},
+			),
+			Action: func(c *cli.Context) error {
+				grid, err = conway.RandomGrid(
+					c.Int("width"), c.Int("height"), c.Float64("probability"))
+				util.Guard(err)
+				setOutFile(config, c.String("outfile"))
+				conway.Run(grid, config)
+				return nil
+			},
+		},
+	}
+
+	return app
+}
+
+func withCommonFlags(config conway.RunConfig, flags ...cli.Flag) []cli.Flag {
+	 commonFlags := []cli.Flag{
 		cli.StringFlag{
 			Name:  "outfile, o",
 			Value: "-",
@@ -57,87 +137,22 @@ func initApp() *cli.App {
 			Destination: &config.Spinner,
 		},
 	}
+	return append(flags, commonFlags...)
+}
 
-	app.Commands = []cli.Command{
-		cli.Command{
-			Name:    "defined",
-			Aliases: []string{"def"},
-			Usage:   "start with a predefined grid",
-			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:  "grid, g",
-					Value: "",
-					Usage: strings.Join([]string{
-						"Starting grid.",
-						"\t\tIf `FILE` starts with '@', interpret it as a file path.",
-						"\t\tIf `FILE` is '-', read from stdout.",
-						"\t\tIf `FILE` is absent or blank, use a demo starting grid.",
-					}, "\n"),
-				},
-			},
-			Action: func(c *cli.Context) error {
-				if path := c.String("grid"); len(path) > 0 {
-					if path == "-" {
-						// Read Grid from stdin.
-						config.GridFile = os.Stdin
-					} else if path[0] == '@' {
-						// Read Grid from file.
-						file, err := os.OpenFile(path[1:], os.O_RDONLY, 0600)
-						util.Guard(err)
-						defer file.Close()
-						config.GridFile = file
-					} else {
-						// Read Grid from argument.
-						strings.Split
-					}
-				} else {
-					// Use the demo Grid.
-				}
 
-				gridBytes, err := ioutil.ReadAll(config.GridFile)
-				util.Guard(err)
-				grid = conway.FromString(string(gridBytes))
-			},
-		},
-		cli.Command{
-			Name:    "random",
-			Aliases: []string{"rand"},
-			Usage:   "start with a randomly generated grid",
-			Flags: []cli.Flag{
-				cli.IntFlag{
-					Name:  "width, w",
-					Value: 9,
-					Usage: "max `WIDTH` of the grid",
-				},
-				cli.IntFlag{
-					Name:  "height, h",
-					Value: 9,
-					Usage: "max `HEIGHT` of the grid",
-				},
-				cli.Float64Flag{
-					Name:  "probability, p",
-					Value: 0.5,
-					Usage: "probability of living cells, where 0 < `PROB` <= 1",
-				},
-			},
-			Action: func(c *cli.Context) error {
-				grid = RandomGrid(c.Int("width"), c.Int("height"), c.Float64("probability"))
-			},
-		},
+func setOutFile(config conway.RunConfig, path string) {
+	if path != "-" {
+		file, err := os.Create(path)
+		util.Guard(err)
+		config.OutFile = file
 	}
+}
 
-	app.Action = func(c *cli.Context) error {
-		if path := c.String("outfile"); path != "-" {
-			// Write results to a file.
-			file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
-			util.Guard(err)
-			config.OutFile = file
-			defer file.Close()
-		}
-
-		conway.Run(grid, config)
-		return nil
-	}
-
-	return app
+func readGrid(r io.Reader) (grid conway.Grid) {
+	gridBytes, err := ioutil.ReadAll(r)
+	util.Guard(err)
+	grid, err = conway.FromString(string(gridBytes))
+	util.Guard(err)
+	return
 }
