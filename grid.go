@@ -146,10 +146,12 @@ func (g Grid) Next() (Grid, bool) {
 
 func (g Grid) withNeighbors() Grid {
 	grid := make(Grid)
-	for cell := range g {
+	for cell, state := range g {
 		grid.Add(cell, Dead)
-		for _, c := range cell.neighbors() {
-			grid.Add(c, Dead)
+		if state == Alive {
+			for _, c := range cell.neighbors() {
+				grid.Add(c, Dead)
+			}
 		}
 	}
 	return grid

@@ -35,16 +35,6 @@ func TestFromSlice(t *testing.T) {
 	require.Nil(grid)
 }
 
-func aliveCells(grid Grid) []Cell {
-	cells := []Cell{}
-	for cell, state := range grid {
-		if state == Alive {
-			cells = append(cells, cell)
-		}
-	}
-	return cells
-}
-
 func TestFromString(t *testing.T) {
 	require := require.New(t)
 	var grid, expected Grid
@@ -203,7 +193,7 @@ func TestGrid_withNeighbors(t *testing.T) {
 		Cell{-1, 1}, Cell{0, 1}, Cell{1, 1}, Cell{2, 1},
 		Cell{0, 2}, Cell{1, 2}, Cell{2, 2},
 	}
-	actual_ := aliveCells(actual)
+	actual_ := allCells(actual)
 	require.Subset(expected, actual_)
 	require.Subset(actual_, expected)
 }
@@ -301,4 +291,22 @@ func TestGrid_Show(t *testing.T) {
 func mkGrid(rows [][]int) Grid {
 	grid, _ := FromSlice(rows)
 	return grid
+}
+
+func aliveCells(grid Grid) []Cell {
+	cells := []Cell{}
+	for cell, state := range grid {
+		if state == Alive {
+			cells = append(cells, cell)
+		}
+	}
+	return cells
+}
+
+func allCells(grid Grid) []Cell {
+	cells := make([]Cell, len(grid))
+	for cell := range grid {
+		cells = append(cells, cell)
+	}
+	return cells
 }
