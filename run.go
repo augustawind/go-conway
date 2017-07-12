@@ -28,7 +28,7 @@ func DefaultRunConfig() RunConfig {
 		OutFile:      os.Stdout,
 		Delay:        500 * time.Millisecond,
 		MaxTurns:     0,
-		ClearScreen:  true,
+		ClearScreen:  false,
 		Interactive:  false,
 		Spinner:      false,
 		KeepCentered: false,
